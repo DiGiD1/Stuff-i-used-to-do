@@ -1,0 +1,156 @@
+package com.example.daniel.googlemapsproject;
+
+import android.graphics.Color;
+import android.support.v4.app.FragmentActivity;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.view.View;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+
+import static com.example.daniel.googlemapsproject.R.id.fran;
+import static com.example.daniel.googlemapsproject.R.id.till;
+
+
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback  {
+    public static final String LOG_TAG = "myLogs";
+    private GoogleMap mMap;
+    ArrayList<String> list = new ArrayList<>();
+    ArrayList<String> franlist = new ArrayList<>();
+    @Override
+    protected void onCreate(Bundle savedInstanceState)  {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_maps);
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+        Log.d(LOG_TAG, "I shouldn't be here");
+    }
+
+
+    public void add(View view) throws IOException {
+
+        EditText et = (EditText) findViewById(fran);
+        EditText ett = (EditText) findViewById(till);
+        franlist.add(et.getEditableText().toString());
+        list.add(ett.getEditableText().toString());
+    }
+
+
+    public void rakna(View view) throws IOException, JSONException {
+
+
+        String api = "go get a own google api key :)";
+        String url = "https://maps.googleapis.com/maps/api/directions/json?origin="+ franlist.get(0) + "&destination=" + franlist.get(0) + "&waypoints=optimize:true|" + list.get(0) +"|" + list.get(1)+ "|" + list.get(2) + "&key=" + api;
+
+        Log.d(LOG_TAG, url);
+
+        TextView svaret = (TextView) findViewById(R.id.svaret);
+        Log.d(LOG_TAG, "works");
+        try
+        {
+            //Anropar doInBackground-metoden i HTTPConnect-klassen som ska hämta html-koden för en
+            //given URL, dvs. i detta fall hmta html-koden för webbsidan http://ilmatieteenlaitos.fi/saa/<stad>
+          //  webContent = new Parser().execute(url).get();
+
+            String outputResult = new Parser().execute(svaret.getText().toString(), url).get();
+
+            JSONObject jsObj = new JSONObject(outputResult);
+            //  String distance = jsObj.getString("distance");
+
+            JSONArray routes = jsObj.getJSONArray("routes");
+            for (int i = 0; i < routes.length(); i++) {
+                JSONObject loopRoutes = routes.getJSONObject(i);
+
+                JSONArray legs = loopRoutes.getJSONArray("legs");
+
+                for (int y = 0; y < legs.length(); y++) {
+                    JSONObject loopLegs = legs.getJSONObject(y);
+
+                    JSONObject distance = loopLegs.getJSONObject("distance");
+                    String destinationDistance = distance.getString("text");
+
+                    svaret.setText("Distance: " + destinationDistance);
+
+                    JSONObject endMarker = loopLegs.getJSONObject("end_location");
+                    String endLat = endMarker.getString("lat");
+                    String endLng = endMarker.getString("lng");
+
+                    JSONObject startMarker = loopLegs.getJSONObject("start_location");
+                    String startLat = startMarker.getString("lat");
+                    String startLng = startMarker.getString("lng");
+
+                    double lat2 = Double.parseDouble(startLat);
+                    double lng2 = Double.parseDouble(startLng);
+
+                    double lat1 = Double.parseDouble(endLat);
+                    double lng1 = Double.parseDouble(endLng);
+
+                    LatLng start = new LatLng(lat2, lng2);
+                    mMap.addMarker(new MarkerOptions().position(start).title("Start point"));
+
+                    LatLng end = new LatLng(lat1, lng1);
+                    mMap.addMarker(new MarkerOptions().position(end).title("End point"));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(end));
+                    mMap.addPolyline(new PolylineOptions().add(start, end).width(10).color(Color.RED));
+
+                    //      JSONObject duration = loopLegs.getJSONObject("duration");
+                    //    String destinationDuration = duration.getString("text");
+
+
+
+                }
+            }
+
+        }
+        catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        }
+        catch (ExecutionException e)
+        {
+            e.printStackTrace();
+        }
+
+    }
+
+   @Override
+    public void onMapReady(GoogleMap googleMap)  {
+
+        mMap = googleMap;
+
+      /*  // Add a marker in Sydney and move the camera
+        LatLng turku = new LatLng(60.454510, 22.264824);
+        mMap.addMarker(new MarkerOptions().position(turku).title("Turku"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(turku));
+        LatLng helsinki = new LatLng(60.19, 24.94);
+        mMap.addMarker(new MarkerOptions().position(helsinki).title("Helsinki"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(helsinki));
+        LatLng jyväskylä = new LatLng(62.24147, 25.72088);
+        mMap.addMarker(new MarkerOptions().position(jyväskylä).title("Jyväskylä"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(jyväskylä));
+        LatLng oulu = new LatLng(65.055499778, 25.459664828);
+        mMap.addMarker(new MarkerOptions().position(oulu).title("Oulu"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(oulu));
+        LatLng joensuu = new LatLng(62.601090, 29.763530);
+        mMap.addMarker(new MarkerOptions().position(joensuu).title("Joensuu"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(joensuu)); */
+    }
+}
